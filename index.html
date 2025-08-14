@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3D Split-Slider Showcase</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- fullPage.js CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/3.1.0/fullpage.min.css"
+    crossorigin="anonymous"
+  />
+
+  <!-- Google Fonts & Material Icons -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@700&family=Poppins:wght@500&family=Public+Sans:wght@300;400&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    rel="stylesheet"
+  />
+
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0 }
+    html, body {
+      height:100%; overflow:hidden;
+      background:#121212; color:#fff;
+      font-family:'Public Sans',sans-serif; line-height:1.7;
+    }
+    #fullpage { height:100vh }
+    .section { position:relative; width:100vw; height:100vh; overflow:hidden }
+
+    .scroll-indicator {
+      position:absolute; bottom:20px; left:50%;
+      transform:translateX(-50%);
+      font-size:2rem; color:rgba(255,255,255,1);
+      animation:bounce 2s infinite; z-index:9; pointer-events:none;
+    }
+    @keyframes bounce {
+      0%,100%{transform:translateX(-50%) translateY(0);}
+      50%    {transform:translateX(-50%) translateY(10px);}
+    }
+    .about .scroll-indicator { display:none }
+
+    .hero .text-overlay,
+    .about .text-overlay {
+      position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      text-align:center; z-index:5;
+    }
+    .hero h1 { font-family:'Manrope',sans-serif; font-weight:700; font-size:5rem }
+    .hero h2 { font-family:'Manrope',sans-serif; font-weight:700; font-size:2rem; margin-top:.5rem }
+
+    .video-compare .video-wrapper { position:absolute; inset:0; overflow:hidden }
+    .video-wrapper video.bottom,
+    .mask-layer video.top {
+      position:absolute; top:50%; left:50%;
+      min-width:100%; min-height:100%;
+      transform:translate(-50%,-50%);
+      object-fit:cover;
+    }
+    .mask-layer {
+      position:absolute; inset:0; overflow:hidden;
+      -webkit-mask-image:linear-gradient(to right, black 50%, transparent 50%);
+      mask-image:linear-gradient(to right, black 50%, transparent 50%);
+      mask-repeat:no-repeat; mask-size:100% 100%;
+    }
+
+    .slider-container { position:absolute; inset:0; z-index:7 }
+    .divider {
+      position:absolute; top:0; bottom:0; left:50%;
+      width:4px; background:rgba(255,255,255,1);
+      transform:translateX(-50%); cursor:ew-resize;
+    }
+    .divider .drag-icon {
+      position:absolute; top:70%; left:50%;
+      transform:translate(-50%,-50%);
+      font-family:'Material Icons'; font-size:1.6rem;
+      background:#fff; color:#000; border-radius:50%;
+      padding:.3em;
+      pointer-events:none;
+    }
+    .slider-container .label {
+      position:absolute; bottom:8%;
+      font:500 1rem 'Poppins',sans-serif; text-transform:uppercase;
+      background:rgba(0,0,0,0.5); padding:.25em .75em; border-radius:4px;
+      pointer-events:none;
+    }
+    .label.before { left:5% } .label.after { right:5% }
+
+    .video-compare .text-overlay {
+      position:absolute; top:10%; left:20%;
+      width:60vw; min-width:200px; max-width:80vw;
+      min-height:80px; max-height:70vh;
+      background:rgba(0,0,0,0.5); backdrop-filter:blur(12px);
+      border-radius:8px; padding:1.5rem 2rem;
+      user-select:none; z-index:8; overflow:auto;
+      box-sizing:border-box;
+      transition:top .3s ease, width .3s ease, left .3s ease, transform .3s ease;
+    }
+    .video-compare .text-overlay::-webkit-scrollbar { width:8px }
+    .video-compare .text-overlay::-webkit-scrollbar-thumb {
+      background:rgba(255,255,255,0.25);
+      border-radius:10px; border:2px solid transparent;
+      background-clip:content-box;
+    }
+    .video-compare .text-overlay:hover::-webkit-scrollbar-thumb {
+      background:rgba(255,255,255,0.5);
+    }
+
+    /* Closed: hide content, shrink & center */
+    .text-overlay.closed {
+      top:10px!important;
+      left:50%!important;
+      width:max-content!important;
+      transform:translateX(-50%)!important;
+    }
+    .text-overlay.closed p,
+    .text-overlay.closed .view-model {
+      display:none;
+    }
+
+    .overlay-close {
+      position:absolute; top:8px; right:8px;
+      font-family:'Material Icons'; font-size:1.5rem;
+      color:#fff; cursor:pointer; z-index:9;
+    }
+
+    .view-model {
+      display:inline-flex; align-items:center; margin-top:1rem;
+      padding:.5rem 1rem; font:500 1rem 'Poppins',sans-serif;
+      text-transform:uppercase;
+      background:rgba(255,255,255,0.1); border:1px solid #fff;
+      border-radius:4px; color:#fff; cursor:pointer;
+      transition:background .3s,transform .3s;
+    }
+    .view-model .plus {
+      margin-right:.5rem;
+      transition:transform .3s ease;
+      font-family:'Material Icons';
+      font-size:1.2rem;
+    }
+    .view-model:hover { background:rgba(255,255,255,0.2); transform:translateY(-2px) scale(1.05); }
+    .view-model:hover .plus { transform:rotate(90deg); }
+
+    .video-compare::after {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(ellipse at center,
+        rgba(0,0,0,0)50%, rgba(0,0,0,0.8)100%);
+      pointer-events:none; z-index:5;
+    }
+    .gradient {
+      position:absolute; inset:0;
+      background:linear-gradient(to bottom right,
+        rgba(0,0,0,0.6),rgba(0,0,0,0)30%,rgba(0,0,0,0)70%,rgba(0,0,0,0.6));
+      animation:shift 12s infinite alternate;
+      pointer-events:none; z-index:6;
+    }
+    @keyframes shift { from{background-position:top left}to{background-position:bottom right} }
+
+    .popup-model {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.85);
+      justify-content:center; align-items:center;
+      opacity:0; pointer-events:none; transition:opacity .6s ease;
+      z-index:20;
+    }
+    .popup-model.active {
+      display:flex; opacity:1; pointer-events:all;
+    }
+    body.popup-open { overflow:hidden!important; }
+    .popup-model model-viewer {
+      width:80vw; height:80vh; max-width:1000px;
+      background:#1e1e1e; border-radius:12px; box-shadow:0 0 80px rgba(0,0,0,0.6);
+      transform:scale(.9); opacity:0; transition:transform .6s,opacity .6s;
+    }
+    .popup-model.active model-viewer {
+      transform:scale(1); opacity:1;
+    }
+    .close-btn {
+      position:absolute; top:20px; right:20px;
+      font-family:'Material Icons'; font-size:2rem;
+      color:#fff; cursor:pointer; z-index:21;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="fullpage">
+    <!-- Hero -->
+    <div class="section hero" data-anchor="hero">
+      <div class="text-overlay">
+        <h1>GPC</h1>
+        <h2>AND THE HIDDEN HISTORY OF THE GRISONS</h2>
+      </div>
+      <i class="material-icons scroll-indicator">expand_more</i>
+    </div>
+
+    <!-- Guardaval -->
+    <div class="section video-compare" data-anchor="guardaval" data-model="model1">
+      <div class="video-wrapper">
+        <video class="bottom" src="assets/videos/Guardaval_splats_final.mp4" autoplay muted loop playsinline></video>
+        <div class="mask-layer">
+          <video class="top" src="assets/videos/Guardaval_nerfs.mp4" autoplay muted loop playsinline></video>
+        </div>
+        <div class="gradient"></div>
+        <div class="slider-container">
+          <div class="divider">
+            <i class="material-icons drag-icon">swap_horiz</i>
+          </div>
+          <span class="label before">NeRF</span>
+          <span class="label after">3DGS</span>
+        </div>
+      </div>
+
+      <div class="text-overlay">
+        <i class="material-icons overlay-close">close</i>
+        <h2>Guardaval Ruins</h2>
+        <p>
+          Guardaval Ruins is a medieval castle in Madulain, Switzerland, built around 1250 by Bishop Volkard von Neuenburg. Once a toll station and administrative center, it later changed hands and was abandoned by 1500, falling into ruin. Restoration in the 20th century preserved its remains. Today, the site attracts hikers and history lovers with its rich heritage and panoramic views of the Engadin valley.
+        </p>
+        <button class="view-model">
+          <i class="material-icons plus">3d_rotation</i>
+          View 3D Model
+        </button>
+      </div>
+      <i class="material-icons scroll-indicator">expand_more</i>
+    </div>
+
+    <!-- St. Ulrich -->
+    <div class="section video-compare" data-anchor="st-ulrich" data-model="model2">
+      <div class="video-wrapper">
+        <video class="bottom" src="assets/videos/Chapella_splats.mp4" autoplay muted loop playsinline></video>
+        <div class="mask-layer">
+          <video class="top" src="assets/videos/Chapella_nerfs.mp4" autoplay muted loop playsinline></video>
+        </div>
+        <div class="gradient"></div>
+        <div class="slider-container">
+          <div class="divider">
+            <i class="material-icons drag-icon">swap_horiz</i>
+          </div>
+          <span class="label before">NeRF</span>
+          <span class="label after">3DGS</span>
+        </div>
+      </div>
+
+      <div class="text-overlay">
+        <i class="material-icons overlay-close">close</i>
+        <h2>St. Ulrich &amp; St. Nicholas Church and Hospice</h2>
+        <p>
+          This historic complex near Chapella includes a Romanesque church and hospice, founded between the 11th and 13th centuries for travelers crossing the Alps. Abandoned after the Reformation, the site was preserved through archaeological restoration in 1981. Today, the former hospice serves as a youth education center.
+        </p>
+        <button class="view-model">
+          <i class="material-icons plus">3d_rotation</i>
+          View 3D Model
+        </button>
+      </div>
+      <i class="material-icons scroll-indicator">expand_more</i>
+    </div>
+
+    <!-- About -->
+    <div class="section about" data-anchor="about">
+      <div class="text-overlay">
+        <h2>About</h2>
+        <p>
+          This website presents the results of the Geodetic Project Course 2025. The project team—Allyna Dachler, Dario De Luca, Andreas Dombos, Nando Grossenbacher, and Jingru Tong—carried out the field measurements in June, under the guidance of Nando Metzger, Marcel Iten, and Vukasin Bozic. Data processing was completed on July 4th.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popups -->
+  <div class="popup-model" id="popup-model1">
+    <div class="close-btn" onclick="
+      document.body.classList.remove('popup-open');
+      this.parentElement.classList.remove('active');
+      fullpage_api.setAllowScrolling(true);
+      fullpage_api.setKeyboardScrolling(true);
+    ">
+      <i class="material-icons">close</i>
+    </div>
+    <model-viewer src="assets/models/model1.glb" auto-rotate camera-controls exposure="0.5" shadow-intensity="0.8" environment-image="assets/pine_picnic_4k.hdr"></model-viewer>
+  </div>
+  <div class="popup-model" id="popup-model2">
+    <div class="close-btn" onclick="
+      document.body.classList.remove('popup-open');
+      this.parentElement.classList.remove('active');
+      fullpage_api.setAllowScrolling(true);
+      fullpage_api.setKeyboardScrolling(true);
+    ">
+      <i class="material-icons">close</i>
+    </div>
+    <model-viewer src="assets/models/model2.glb" auto-rotate camera-controls exposure="0.5" shadow-intensity="0.8" environment-image="assets/pine_picnic_4k.hdr"></model-viewer>
+  </div>
+
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/3.1.0/fullpage.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new fullpage('#fullpage', {
+        anchors:['hero','guardaval','st-ulrich','about'],
+        autoScrolling:true, fitToSection:true, fitToSectionDelay:600,
+        navigation:false, controlArrows:false, scrollOverflow:false,
+        sectionSelector:'.section',
+        onLeave: s => s.item.querySelectorAll('video').forEach(v=>v.pause()),
+        afterLoad: (_,d)=>d.item.querySelectorAll('video').forEach(v=>{
+          v.currentTime=0; v.play().catch(()=>{});
+        })
+      });
+
+      // slider drag & popup
+      document.querySelectorAll('.video-compare').forEach(sec => {
+        const div    = sec.querySelector('.divider');
+        const mask   = sec.querySelector('.mask-layer');
+        const wrap   = sec.querySelector('.slider-container');
+        const btn    = sec.querySelector('.view-model');
+        let dragging = false;
+
+        function updateMask(x){
+          const r = wrap.getBoundingClientRect();
+          let px = Math.max(0, Math.min(r.width, x - r.left));
+          const pct = px / r.width * 100;
+          const grad = `linear-gradient(to right, black ${pct}%, transparent ${pct}%)`;
+          mask.style.webkitMaskImage = mask.style.maskImage = grad;
+          div.style.left = pct + '%';
+        }
+        updateMask(wrap.getBoundingClientRect().left + wrap.offsetWidth/2);
+
+        ['pointerdown','pointermove','pointerup','pointerleave']
+          .forEach(evt=> div.addEventListener(evt,e=>{
+            if(evt==='pointerdown'){dragging=true;div.setPointerCapture(e.pointerId)}
+            if(evt==='pointerup'||evt==='pointerleave'){dragging=false;div.releasePointerCapture(e.pointerId)}
+            if(evt==='pointermove'&&dragging)updateMask(e.clientX);
+          }));
+
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          document.body.classList.add('popup-open');
+          fullpage_api.setAllowScrolling(false);
+          fullpage_api.setKeyboardScrolling(false);
+          document.getElementById(`popup-${sec.dataset.model}`).classList.add('active');
+        });
+      });
+
+      // close/fullscreen toggle
+      document.querySelectorAll('.overlay-close').forEach(icon=>{
+        icon.addEventListener('click',()=>{
+          const ov = icon.closest('.text-overlay');
+          const closed = ov.classList.toggle('closed');
+          icon.textContent = closed ? 'fullscreen' : 'close';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
