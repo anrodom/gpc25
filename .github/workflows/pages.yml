@@ -19,15 +19,20 @@ jobs:
         with:
           lfs: true
 
-      - name: Pull LFS files (extra safety)
+      # (Optional — checkout@v4 with lfs:true already pulls LFS objects)
+      - name: Ensure LFS files are present
         run: git lfs pull
 
-      # If you have a build step, run it here. Otherwise just prepare the site dir.
       - name: Prepare site
         run: |
           mkdir -p _site
-          cp -R * _site/
-          # If you have a dist/build folder, copy that instead.
+          rsync -av --delete \
+            --exclude "_site" \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude ".gitignore" \
+            --exclude "README.md" \
+            ./ _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
